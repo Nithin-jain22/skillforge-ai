@@ -4,10 +4,16 @@ import Editor from '@monaco-editor/react';
 import BackButton from '../../components/BackButton';
 import Breadcrumb from '../../components/Breadcrumb';
 
-// Demo project templates
+// ============================================
+// PROJECT TEMPLATES
+// ============================================
+
+// CLEAN TEMPLATE - Used for Build Mode ONLY
+// This template contains NO bugs and is production-ready
 const DEMO_PROJECTS = {
   counter: {
     name: 'Simple Counter App',
+    description: 'Clean, bug-free counter app for Build mode generation',
     files: {
       'index.html': `<!DOCTYPE html>
 <html lang="en">
@@ -89,8 +95,13 @@ function decrement() {
 }`
     }
   },
+  
+  // BUGGY TEMPLATE - Used for Debug Mode Demo ONLY
+  // This template contains INTENTIONAL bugs for testing debug logic
+  // Should NEVER be used in Build mode
   buggy_counter: {
     name: 'Counter App (with bugs)',
+    description: 'Demo project with intentional bugs for Debug mode practice',
     files: {
       'index.html': `<!DOCTYPE html>
 <html lang="en">
@@ -185,6 +196,7 @@ const BuildWorkspace = () => {
   const [aiExplanation, setAiExplanation] = useState('');
   const [userInput, setUserInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [rightPanel, setRightPanel] = useState('ai'); // 'ai' or 'preview'
 
   useEffect(() => {
     if (currentMode === 'stuck') {
@@ -193,8 +205,42 @@ const BuildWorkspace = () => {
       setFiles(buggyProject.files);
       setCurrentFile('script.js');
       setCode(buggyProject.files['script.js']);
+      setRightPanel('ai'); // Always show AI panel in Debug mode
+    } else {
+      setRightPanel('ai'); // Default to AI panel in Build mode
     }
   }, [currentMode]);
+
+  // Update files when code changes
+  useEffect(() => {
+    if (currentFile && code !== undefined) {
+      setFiles(prev => ({
+        ...prev,
+        [currentFile]: code
+      }));
+    }
+  }, [code, currentFile]);
+
+  // Generate live preview HTML document
+  const generatePreview = () => {
+    if (!files['index.html']) return '<html><body><p>No HTML file loaded</p></body></html>';
+    
+    let html = files['index.html'] || '';
+    const css = files['style.css'] || '';
+    const js = files['script.js'] || '';
+    
+    // Inject CSS into HTML
+    if (css) {
+      html = html.replace('</head>', `<style>${css}</style></head>`);
+    }
+    
+    // Inject JS into HTML (replace external script tag)
+    if (js) {
+      html = html.replace(/<script src="script\.js"><\/script>/, `<script>${js}</script>`);
+    }
+    
+    return html;
+  };
 
   // Debug mode: Analyze JavaScript code for common bugs
   const analyzeDebugCode = (codeToAnalyze) => {
@@ -357,19 +403,18 @@ const BuildWorkspace = () => {
     };
   };
 
-  // Mock AI function to analyze code and generate explanations
-  const analyzeCode = (userIdea) => {
-    setLoading(true);
+  // ============================================
+  // BUILD MODE: Generate clean, runnable code
+  // ============================================
+  const generateBuildProject = (userIdea) => {
+    // Always use the CLEAN counter template
+    // This ensures generated code is bug-free and ready to run
+    const project = DEMO_PROJECTS.counter;
+    setFiles(project.files);
+    setCurrentFile('script.js');
+    setCode(project.files['script.js']);
     
-    setTimeout(() => {
-      if (currentMode === 'build') {
-        // Build from scratch mode
-        const project = DEMO_PROJECTS.counter;
-        setFiles(project.files);
-        setCurrentFile('script.js');
-        setCode(project.files['script.js']);
-        
-        setAiExplanation(`
+    return `
 # Project Analysis: ${userIdea}
 
 ## What I Created
@@ -411,12 +456,19 @@ function increment() {
 - **Separation of Concerns**: HTML (structure), CSS (style), JS (behavior) are separate
 - **Simple & Clear**: Easy to understand and modify
 - **Interactive**: Responds to user clicks in real-time
-        `);
-      } else {
-        // Debug mode - analyze current code in editor
-        const analysis = analyzeDebugCode(code);
-        
-        setAiExplanation(`
+- **No Bugs**: Clean, production-ready code
+    `;
+  };
+
+  // ============================================
+  // DEBUG MODE: Analyze user-edited code
+  // ============================================
+  const generateDebugAnalysis = () => {
+    // Analyze whatever code the user has in the editor
+    // This could be buggy code they wrote or loaded
+    const analysis = analyzeDebugCode(code);
+    
+    return `
 # ${analysis.title}
 
 ## Problem Found
@@ -438,7 +490,22 @@ ${analysis.correctedCode}
 - Typos are a common source of bugs in programming
 - Always double-check variable names when debugging
 - Using semicolons is a JavaScript best practice
-        `);
+    `;
+  };
+
+  // Main AI analysis dispatcher
+  const analyzeCode = (userIdea) => {
+    setLoading(true);
+    
+    setTimeout(() => {
+      if (currentMode === 'build') {
+        // BUILD MODE: Generate clean project from user idea
+        const explanation = generateBuildProject(userIdea);
+        setAiExplanation(explanation);
+      } else {
+        // DEBUG MODE: Analyze current editor code for bugs
+        const explanation = generateDebugAnalysis();
+        setAiExplanation(explanation);
       }
       
       setLoading(false);
@@ -591,54 +658,102 @@ ${analysis.correctedCode}
           </div>
         </div>
 
-        {/* Right: AI Explanation Panel */}
+        {/* Right: AI Explanation / Preview Panel */}
         <div className="w-96 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col">
-          <div className="bg-gradient-to-r from-primary-600 to-purple-600 text-white p-4">
-            <h3 className="font-bold">AI Explanation</h3>
+          {/* Tab Header */}
+          <div className="bg-gradient-to-r from-primary-600 to-purple-600 text-white">
+            <div className="flex">
+              <button
+                onClick={() => setRightPanel('ai')}
+                className={`flex-1 px-4 py-3 font-bold transition-colors ${
+                  rightPanel === 'ai'
+                    ? 'bg-white/20'
+                    : 'hover:bg-white/10'
+                }`}
+              >
+                🤖 AI Explanation
+              </button>
+              {currentMode === 'build' && Object.keys(files).length > 0 && (
+                <button
+                  onClick={() => setRightPanel('preview')}
+                  className={`flex-1 px-4 py-3 font-bold transition-colors ${
+                    rightPanel === 'preview'
+                      ? 'bg-white/20'
+                      : 'hover:bg-white/10'
+                  }`}
+                >
+                  👁️ Live Preview
+                </button>
+              )}
+            </div>
           </div>
           
-          <div className="flex-1 overflow-y-auto p-4">
-            {loading ? (
-              <div className="flex items-center justify-center h-full">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary-600 border-t-transparent"></div>
-              </div>
-            ) : aiExplanation ? (
-              <div className="prose prose-sm dark:prose-invert max-w-none">
-                {aiExplanation.split('\n').map((line, i) => {
-                  if (line.startsWith('# ')) {
-                    return <h2 key={i} className="text-xl font-bold mt-4 mb-2">{line.substring(2)}</h2>;
-                  } else if (line.startsWith('## ')) {
-                    return <h3 key={i} className="text-lg font-bold mt-3 mb-2">{line.substring(3)}</h3>;
-                  } else if (line.startsWith('### ')) {
-                    return <h4 key={i} className="text-md font-bold mt-2 mb-1">{line.substring(4)}</h4>;
-                  } else if (line.startsWith('```')) {
-                    return null; // Handle code blocks separately
-                  } else if (line.trim().startsWith('-')) {
-                    return <li key={i} className="ml-4">{line.substring(1).trim()}</li>;
-                  } else if (line.includes('`') && !line.startsWith('```')) {
-                    const parts = line.split('`');
-                    return (
-                      <p key={i} className="mb-2">
-                        {parts.map((part, j) => 
-                          j % 2 === 0 ? part : <code key={j} className="bg-gray-200 dark:bg-gray-700 px-1 rounded">{part}</code>
-                        )}
-                      </p>
-                    );
-                  } else if (line.trim()) {
-                    return <p key={i} className="mb-2">{line}</p>;
-                  }
-                  return <br key={i} />;
-                })}
+          {/* Panel Content */}
+          <div className="flex-1 overflow-y-auto">
+            {rightPanel === 'ai' ? (
+              <div className="p-4">
+                {loading ? (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary-600 border-t-transparent"></div>
+                  </div>
+                ) : aiExplanation ? (
+                  <div className="prose prose-sm dark:prose-invert max-w-none">
+                    {aiExplanation.split('\n').map((line, i) => {
+                      if (line.startsWith('# ')) {
+                        return <h2 key={i} className="text-xl font-bold mt-4 mb-2">{line.substring(2)}</h2>;
+                      } else if (line.startsWith('## ')) {
+                        return <h3 key={i} className="text-lg font-bold mt-3 mb-2">{line.substring(3)}</h3>;
+                      } else if (line.startsWith('### ')) {
+                        return <h4 key={i} className="text-md font-bold mt-2 mb-1">{line.substring(4)}</h4>;
+                      } else if (line.startsWith('```')) {
+                        return null; // Handle code blocks separately
+                      } else if (line.trim().startsWith('-')) {
+                        return <li key={i} className="ml-4">{line.substring(1).trim()}</li>;
+                      } else if (line.includes('`') && !line.startsWith('```')) {
+                        const parts = line.split('`');
+                        return (
+                          <p key={i} className="mb-2">
+                            {parts.map((part, j) => 
+                              j % 2 === 0 ? part : <code key={j} className="bg-gray-200 dark:bg-gray-700 px-1 rounded">{part}</code>
+                            )}
+                          </p>
+                        );
+                      } else if (line.trim()) {
+                        return <p key={i} className="mb-2">{line}</p>;
+                      }
+                      return <br key={i} />;
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-500 dark:text-gray-400 mt-12">
+                    <div className="text-4xl mb-4">🤖</div>
+                    <p>AI explanations will appear here</p>
+                    <p className="text-sm mt-2">
+                      {currentMode === 'build' 
+                        ? 'Enter your project idea below'
+                        : 'AI will analyze your code for bugs'}
+                    </p>
+                  </div>
+                )}
               </div>
             ) : (
-              <div className="text-center text-gray-500 dark:text-gray-400 mt-12">
-                <div className="text-4xl mb-4">🤖</div>
-                <p>AI explanations will appear here</p>
-                <p className="text-sm mt-2">
-                  {currentMode === 'build' 
-                    ? 'Enter your project idea below'
-                    : 'AI will analyze your code for bugs'}
-                </p>
+              <div className="h-full bg-white dark:bg-gray-900">
+                {Object.keys(files).length > 0 ? (
+                  <iframe
+                    srcDoc={generatePreview()}
+                    title="Live Preview"
+                    className="w-full h-full border-0"
+                    sandbox="allow-scripts"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-center text-gray-500 dark:text-gray-400 p-8">
+                    <div>
+                      <div className="text-4xl mb-4">👁️</div>
+                      <p className="font-semibold">No Preview Available</p>
+                      <p className="text-sm mt-2">Generate a project to see the live preview</p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
