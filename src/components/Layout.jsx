@@ -37,7 +37,25 @@ const Layout = ({ children }) => {
   const links = userProfile?.selectedMode === 'learn' ? learnModeLinks : buildModeLinks;
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex relative">
+      {/* Background Image - Light Mode Only */}
+      {!isDark && (
+        <>
+          {/* Blurred Background Image */}
+          <div 
+            className="fixed inset-0 z-0"
+            style={{
+              backgroundImage: 'url(/240_F_213594025_gAzvAKRuB2uYrfBc88HhwSZBb1M4eWWA.jpg)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              filter: 'blur(5px)',
+            }}
+          />
+          {/* White Overlay for Readability */}
+          <div className="fixed inset-0 z-0 bg-white opacity-60" />
+        </>
+      )}
+
       {/* Mobile Sidebar Toggle */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -50,7 +68,7 @@ const Layout = ({ children }) => {
 
       {/* Sidebar */}
       <aside className={`
-        fixed lg:static inset-y-0 left-0 z-40
+        fixed lg:static inset-y-0 left-0 z-40 lg:z-10
         w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700
         transform transition-transform duration-200 ease-in-out
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
@@ -109,7 +127,7 @@ const Layout = ({ children }) => {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col relative z-10">
         {/* Top Header */}
         <header className="lg:flex hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-8 py-4">
           <div className="flex items-center justify-between w-full">

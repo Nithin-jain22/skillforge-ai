@@ -6,9 +6,27 @@ const Landing = () => {
   const { isDark, toggleTheme } = useTheme();
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen relative">
+      {/* Background Image - Light Mode Only */}
+      {!isDark && (
+        <>
+          {/* Blurred Background Image */}
+          <div 
+            className="fixed inset-0 z-0"
+            style={{
+              backgroundImage: 'url(/240_F_213594025_gAzvAKRuB2uYrfBc88HhwSZBb1M4eWWA.jpg)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              filter: 'blur(5px)',
+            }}
+          />
+          {/* White Overlay for Readability */}
+          <div className="fixed inset-0 z-0 bg-white opacity-60" />
+        </>
+      )}
+
       {/* Navbar */}
-      <nav className="border-b border-gray-200 dark:border-gray-700">
+      <nav className="border-b border-gray-200 dark:border-gray-700 relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
@@ -46,7 +64,7 @@ const Landing = () => {
       </nav>
 
       {/* Hero Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-10">
         <div className="text-center">
           <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary-600 via-purple-600 to-primary-400 bg-clip-text text-transparent">
             Learn or Build. Choose Your Path.
@@ -68,7 +86,7 @@ const Landing = () => {
       </div>
 
       {/* Features Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-10">
         <div className="grid md:grid-cols-3 gap-8">
           {/* Feature 1 */}
           <div className="card text-center">

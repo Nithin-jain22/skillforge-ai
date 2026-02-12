@@ -71,11 +71,29 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen flex items-center justify-center px-4 py-12 relative">
+      {/* Background Image - Light Mode Only */}
+      {!isDark && (
+        <>
+          {/* Blurred Background Image */}
+          <div 
+            className="fixed inset-0 z-0"
+            style={{
+              backgroundImage: 'url(/240_F_213594025_gAzvAKRuB2uYrfBc88HhwSZBb1M4eWWA.jpg)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              filter: 'blur(5px)',
+            }}
+          />
+          {/* White Overlay for Readability */}
+          <div className="fixed inset-0 z-0 bg-white opacity-60" />
+        </>
+      )}
+
       {/* Theme Toggle */}
       <button
         onClick={toggleTheme}
-        className="absolute top-4 right-4 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+        className="absolute top-4 right-4 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors z-10"
       >
         {isDark ? (
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -88,7 +106,7 @@ const Signup = () => {
         )}
       </button>
 
-      <div className="card max-w-md w-full">
+      <div className="card max-w-md w-full relative z-10">
         <Link to="/" className="text-3xl font-bold text-center block mb-8 bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">
           SkillForge AI
         </Link>
