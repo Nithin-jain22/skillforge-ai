@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 
@@ -81,12 +81,15 @@ function App() {
               </ProtectedLayoutRoute>
             } />
             
-            {/* Build Mode Routes - BuildWorkspace has its own layout */}
+            {/* Build Mode Route */}
             <Route path="/build" element={
               <ProtectedRoute>
                 <BuildWorkspace />
               </ProtectedRoute>
             } />
+
+            {/* Catch all route */}
+            <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </Router>
       </AuthProvider>
