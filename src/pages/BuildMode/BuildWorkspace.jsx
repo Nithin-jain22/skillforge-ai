@@ -196,6 +196,167 @@ const BuildWorkspace = () => {
     }
   }, [currentMode]);
 
+  // Debug mode: Analyze JavaScript code for common bugs
+  const analyzeDebugCode = (codeToAnalyze) => {
+    const lines = codeToAnalyze.split('\n');
+    const issues = [];
+    const declaredVariables = new Set();
+    const usedVariables = new Set();
+    const domElements = new Set();
+    
+    // Extract declared variables (let, const, var, function)
+    lines.forEach((line, index) => {
+      // Function declarations
+      const funcMatch = line.match(/function\s+(\w+)/);
+      if (funcMatch) declaredVariables.add(funcMatch[1]);
+      
+      // Variable declarations
+      const varMatch = line.match(/(?:let|const|var)\s+(\w+)/);
+      if (varMatch) declaredVariables.add(varMatch[1]);
+      
+      // DOM element IDs from getElementById
+      const domMatch = line.match(/getElementById\(["'](\w+)["']\)/);
+      if (domMatch) domElements.add(domMatch[1]);
+    });
+    
+    // Analyze each line for issues
+    lines.forEach((line, index) => {
+      const lineNum = index + 1;
+      const trimmed = line.trim();
+      
+      // Skip empty lines and comments
+      if (!trimmed || trimmed.startsWith('//') || trimmed.startsWith('/*')) return;
+      
+      // Check for missing semicolons (simple heuristic)
+      if (trimmed.length > 0 && 
+          !trimmed.endsWith(';') && 
+          !trimmed.endsWith('{') && 
+          !trimmed.endsWith('}') &&
+          !trimmed.startsWith('function') &&
+          !trimmed.startsWith('if') &&
+          !trimmed.startsWith('for') &&
+          !trimmed.startsWith('while') &&
+          (trimmed.includes('=') || trimmed.includes('++') || trimmed.includes('--'))) {
+        issues.push({
+          type: 'warning',
+          line: lineNum,
+          message: 'Missing semicolon (best practice)',
+          severity: 'low'
+        });
+      }
+      
+      // Check for undefined variables (common typos)
+      const varUsagePattern = /\b(\w+)(?:\s*=|\+\+|--|\.)(?!\s*function)/g;
+      let match;
+      while ((match = varUsagePattern.exec(line)) !== null) {
+        const varName = match[1];
+        if (!declaredVariables.has(varName) && 
+            !['document', 'console', 'window', 'Math', 'Date', 'String', 'Number', 'Array'].includes(varName)) {
+          // Check if it might be a typo of an existing variable
+          const possibleTypo = Array.from(declaredVariables).find(declared => {
+            // Check if it's similar (off by 1-2 characters)
+            const similarity = getSimilarity(varName, declared);
+            return similarity > 0.7 && varName !== declared;
+          });
+          
+          if (possibleTypo) {
+            issues.push({
+              type: 'error',
+              line: lineNum,
+              variable: varName,
+              suggestion: possibleTypo,
+              message: `Variable '${varName}' is not defined. Did you mean '${possibleTypo}'?`,
+              severity: 'high'
+            });
+          }
+        }
+      }
+    });
+    
+    // Helper function to calculate similarity
+    function getSimilarity(str1, str2) {
+      const longer = str1.length > str2.length ? str1 : str2;
+      const shorter = str1.length > str2.length ? str2 : str1;
+      if (longer.length === 0) return 1.0;
+      const editDistance = levenshteinDistance(str1, str2);
+      return (longer.length - editDistance) / longer.length;
+    }
+    
+    function levenshteinDistance(str1, str2) {
+      const matrix = [];
+      for (let i = 0; i <= str2.length; i++) {
+        matrix[i] = [i];
+      }
+      for (let j = 0; j <= str1.length; j++) {
+        matrix[0][j] = j;
+      }
+      for (let i = 1; i <= str2.length; i++) {
+        for (let j = 1; j <= str1.length; j++) {
+          if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+            matrix[i][j] = matrix[i - 1][j - 1];
+          } else {
+            matrix[i][j] = Math.min(
+              matrix[i - 1][j - 1] + 1,
+              matrix[i][j - 1] + 1,
+              matrix[i - 1][j] + 1
+            );
+          }
+        }
+      }
+      return matrix[str2.length][str1.length];
+    }
+    
+    // Generate structured explanation
+    if (issues.length === 0) {
+      return {
+        title: 'No Issues Found! ✅',
+        problem: 'Your code looks good!',
+        cause: 'No common errors were detected in the analysis.',
+        fix: 'Your code appears to be clean. You can continue testing it.',
+        correctedCode: codeToAnalyze
+      };
+    }
+    
+    // Find the most critical issue
+    const criticalIssue = issues.find(i => i.severity === 'high') || issues[0];
+    const warningIssues = issues.filter(i => i.severity === 'low');
+    
+    // Fix the code
+    let correctedCode = codeToAnalyze;
+    if (criticalIssue.type === 'error' && criticalIssue.suggestion) {
+      correctedCode = correctedCode.replace(
+        new RegExp(`\\b${criticalIssue.variable}\\b`, 'g'),
+        criticalIssue.suggestion
+      );
+      // Add semicolons to lines that need them
+      const correctedLines = correctedCode.split('\n').map(line => {
+        const trimmed = line.trim();
+        if (trimmed.length > 0 && 
+            !trimmed.endsWith(';') && 
+            !trimmed.endsWith('{') && 
+            !trimmed.endsWith('}') &&
+            (trimmed.includes('=') || trimmed.match(/\b(count|display)\b.*$/))) {
+          return line + ';';
+        }
+        return line;
+      });
+      correctedCode = correctedLines.join('\n');
+    }
+    
+    return {
+      title: criticalIssue.type === 'error' ? '🔴 Bug Detected' : '⚠️  Code Issues Found',
+      problem: criticalIssue.message,
+      cause: criticalIssue.type === 'error' 
+        ? `JavaScript is case-sensitive and variables must be declared before use. The typo '${criticalIssue.variable}' will cause a ReferenceError at runtime.`
+        : 'Code quality issues detected that should be addressed.',
+      fix: criticalIssue.type === 'error'
+        ? `Change '${criticalIssue.variable}' to '${criticalIssue.suggestion}' on line ${criticalIssue.line}.${warningIssues.length > 0 ? ` Also add semicolons to ${warningIssues.length} line(s) for best practice.` : ''}`
+        : 'Review and fix the issues listed below.',
+      correctedCode: correctedCode,
+      allIssues: issues
+    };
+  };
+
   // Mock AI function to analyze code and generate explanations
   const analyzeCode = (userIdea) => {
     setLoading(true);
@@ -252,48 +413,31 @@ function increment() {
 - **Interactive**: Responds to user clicks in real-time
         `);
       } else {
-        // Stuck mode - detect bugs
+        // Debug mode - analyze current code in editor
+        const analysis = analyzeDebugCode(code);
+        
         setAiExplanation(`
-# Bug Analysis
+# ${analysis.title}
 
-## Issues Found
+## Problem Found
+${analysis.problem}
 
-### 1. Missing Semicolons ⚠️
-Lines 1-2 are missing semicolons. While JavaScript allows this, it's best practice to include them.
+## Why This Happens
+${analysis.cause}
 
-### 2. **CRITICAL ERROR** - Typo in Variable Name 🔴
-**Line 6**: \`display.innerText = coun\`
-
-**Problem**: You wrote \`coun\` instead of \`count\`
-
-**Why it's an error**:
-- JavaScript is case-sensitive and spelling matters
-- \`coun\` is not defined anywhere in your code
-- This will throw a \`ReferenceError: coun is not defined\`
-
-**How to fix it**:
-Change \`coun\` to \`count\`
+## How to Fix It
+${analysis.fix}
 
 ## Corrected Code
 \`\`\`javascript
-let count = 0;
-const display = document.getElementById("count");
-
-function increment() {
-  count++;
-  display.innerText = count;  // Fixed: count instead of coun
-}
-
-function decrement() {
-  count--;
-  display.innerText = count;
-}
+${analysis.correctedCode}
 \`\`\`
 
 ## What You Learned
-- Variable names must match exactly
-- Typos are a common source of bugs
-- Always check your variable names carefully
+- Variable names must match exactly - JavaScript is case-sensitive
+- Typos are a common source of bugs in programming
+- Always double-check variable names when debugging
+- Using semicolons is a JavaScript best practice
         `);
       }
       
@@ -302,8 +446,20 @@ function decrement() {
   };
 
   const handleSubmit = () => {
-    if (!userInput.trim()) return;
-    analyzeCode(userInput);
+    // In Build mode, require user input
+    if (currentMode === 'build' && !userInput.trim()) return;
+    
+    // In Debug mode, analyze current code even without input
+    if (currentMode === 'stuck') {
+      if (!code.trim()) {
+        setAiExplanation('# No Code to Analyze\n\nPlease load a project or write some code in the editor first.');
+        return;
+      }
+      analyzeCode(userInput || 'Analyzing your code...');
+    } else {
+      analyzeCode(userInput);
+    }
+    
     setUserInput('');
   };
 
