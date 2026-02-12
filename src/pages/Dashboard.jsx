@@ -68,14 +68,14 @@ const Dashboard = () => {
               </>
             ) : (
               <>
-                <Link to="/build" className="card hover:shadow-xl transition-shadow cursor-pointer">
+                <Link to="/build?mode=build" className="card hover:shadow-xl transition-shadow cursor-pointer">
                   <h3 className="text-xl font-bold mb-2">💻 Start Building</h3>
                   <p className="text-gray-600 dark:text-gray-400">
                     Create a new project with AI assistance
                   </p>
                 </Link>
                 
-                <Link to="/build?mode=stuck" className="card hover:shadow-xl transition-shadow cursor-pointer">
+                <Link to="/build?mode=debug" className="card hover:shadow-xl transition-shadow cursor-pointer">
                   <h3 className="text-xl font-bold mb-2">🔧 Debug Code</h3>
                   <p className="text-gray-600 dark:text-gray-400">
                     Get help fixing bugs in your existing projects
