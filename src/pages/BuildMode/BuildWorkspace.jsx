@@ -187,29 +187,25 @@ function decrement() {
 
 const BuildWorkspace = () => {
   const [searchParams] = useSearchParams();
-  const mode = searchParams.get('mode') || 'build'; // 'build' or 'stuck'
+  const mode = searchParams.get('mode') || 'build';
   
-  const [currentMode, setCurrentMode] = useState(mode);
+  const [activeTab, setActiveTab] = useState(mode === 'stuck' ? 'debug' : 'build'); // 'build' | 'debug' | 'preview'
   const [files, setFiles] = useState({});
   const [currentFile, setCurrentFile] = useState('script.js');
   const [code, setCode] = useState('');
   const [aiExplanation, setAiExplanation] = useState('');
   const [userInput, setUserInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [rightPanel, setRightPanel] = useState('ai'); // 'ai' or 'preview'
 
   useEffect(() => {
-    if (currentMode === 'stuck') {
-      // Load buggy demo project
+    if (activeTab === 'debug' && Object.keys(files).length === 0) {
+      // Load buggy demo project when switching to debug mode
       const buggyProject = DEMO_PROJECTS.buggy_counter;
       setFiles(buggyProject.files);
       setCurrentFile('script.js');
       setCode(buggyProject.files['script.js']);
-      setRightPanel('ai'); // Always show AI panel in Debug mode
-    } else {
-      setRightPanel('ai'); // Default to AI panel in Build mode
     }
-  }, [currentMode]);
+  }, [activeTab]);
 
   // Update files when code changes
   useEffect(() => {
@@ -498,11 +494,11 @@ ${analysis.correctedCode}
     setLoading(true);
     
     setTimeout(() => {
-      if (currentMode === 'build') {
+      if (activeTab === 'build') {
         // BUILD MODE: Generate clean project from user idea
         const explanation = generateBuildProject(userIdea);
         setAiExplanation(explanation);
-      } else {
+      } else if (activeTab === 'debug') {
         // DEBUG MODE: Analyze current editor code for bugs
         const explanation = generateDebugAnalysis();
         setAiExplanation(explanation);
@@ -514,16 +510,16 @@ ${analysis.correctedCode}
 
   const handleSubmit = () => {
     // In Build mode, require user input
-    if (currentMode === 'build' && !userInput.trim()) return;
+    if (activeTab === 'build' && !userInput.trim()) return;
     
     // In Debug mode, analyze current code even without input
-    if (currentMode === 'stuck') {
+    if (activeTab === 'debug') {
       if (!code.trim()) {
         setAiExplanation('# No Code to Analyze\n\nPlease load a project or write some code in the editor first.');
         return;
       }
       analyzeCode(userInput || 'Analyzing your code...');
-    } else {
+    } else if (activeTab === 'build') {
       analyzeCode(userInput);
     }
     
@@ -550,18 +546,18 @@ ${analysis.correctedCode}
             </h1>
           </div>
           
-          {/* Right: Mode Switcher + Profile */}
+          {/* Right: Tab Switcher + Profile */}
           <div className="flex items-center gap-3">
             <div className="flex gap-2">
               <button
                 onClick={() => {
-                  setCurrentMode('build');
+                  setActiveTab('build');
                   setFiles({});
                   setCode('');
                   setAiExplanation('');
                 }}
                 className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                  currentMode === 'build'
+                  activeTab === 'build'
                     ? 'bg-primary-600 text-white'
                     : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
                 }`}
@@ -570,17 +566,30 @@ ${analysis.correctedCode}
               </button>
               <button
                 onClick={() => {
-                  setCurrentMode('stuck');
-                  loadDemoProject('buggy_counter');
+                  setActiveTab('debug');
+                  if (Object.keys(files).length === 0) {
+                    loadDemoProject('buggy_counter');
+                  }
                   setAiExplanation('');
                 }}
                 className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                  currentMode === 'stuck'
+                  activeTab === 'debug'
                     ? 'bg-primary-600 text-white'
                     : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
                 }`}
               >
                 Debug
+              </button>
+              <button
+                onClick={() => setActiveTab('preview')}
+                disabled={Object.keys(files).length === 0}
+                className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                  activeTab === 'preview'
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                Preview
               </button>
             </div>
             
@@ -625,7 +634,7 @@ ${analysis.correctedCode}
             </div>
           ) : (
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              {currentMode === 'build' ? 'Enter an idea below to generate files' : 'Load a project to debug'}
+              {activeTab === 'build' ? 'Enter an idea below to generate files' : activeTab === 'debug' ? 'Load a project to debug' : 'Generate a project first'}
             </p>
           )}
         </div>
@@ -658,39 +667,35 @@ ${analysis.correctedCode}
           </div>
         </div>
 
-        {/* Right: AI Explanation / Preview Panel */}
+        {/* Right: AI Explanation or Preview Panel */}
         <div className="w-96 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col">
-          {/* Tab Header */}
-          <div className="bg-gradient-to-r from-primary-600 to-purple-600 text-white">
-            <div className="flex">
-              <button
-                onClick={() => setRightPanel('ai')}
-                className={`flex-1 px-4 py-3 font-bold transition-colors ${
-                  rightPanel === 'ai'
-                    ? 'bg-white/20'
-                    : 'hover:bg-white/10'
-                }`}
-              >
-                🤖 AI Explanation
-              </button>
-              {currentMode === 'build' && Object.keys(files).length > 0 && (
-                <button
-                  onClick={() => setRightPanel('preview')}
-                  className={`flex-1 px-4 py-3 font-bold transition-colors ${
-                    rightPanel === 'preview'
-                      ? 'bg-white/20'
-                      : 'hover:bg-white/10'
-                  }`}
-                >
-                  👁️ Live Preview
-                </button>
-              )}
-            </div>
+          <div className="bg-gradient-to-r from-primary-600 to-purple-600 text-white p-4">
+            <h3 className="font-bold">
+              {activeTab === 'preview' ? '👁️ Live Preview' : '🤖 AI Explanation'}
+            </h3>
           </div>
           
-          {/* Panel Content */}
           <div className="flex-1 overflow-y-auto">
-            {rightPanel === 'ai' ? (
+            {activeTab === 'preview' ? (
+              <div className="h-full bg-white dark:bg-gray-900">
+                {Object.keys(files).length > 0 ? (
+                  <iframe
+                    srcDoc={generatePreview()}
+                    title="Live Preview"
+                    className="w-full h-full border-0"
+                    sandbox="allow-scripts"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-center text-gray-500 dark:text-gray-400 p-8">
+                    <div>
+                      <div className="text-4xl mb-4">👁️</div>
+                      <p className="font-semibold">No Preview Available</p>
+                      <p className="text-sm mt-2">Generate a project to see the live preview</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
               <div className="p-4">
                 {loading ? (
                   <div className="flex items-center justify-center h-full">
@@ -729,29 +734,10 @@ ${analysis.correctedCode}
                     <div className="text-4xl mb-4">🤖</div>
                     <p>AI explanations will appear here</p>
                     <p className="text-sm mt-2">
-                      {currentMode === 'build' 
+                      {activeTab === 'build' 
                         ? 'Enter your project idea below'
                         : 'AI will analyze your code for bugs'}
                     </p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="h-full bg-white dark:bg-gray-900">
-                {Object.keys(files).length > 0 ? (
-                  <iframe
-                    srcDoc={generatePreview()}
-                    title="Live Preview"
-                    className="w-full h-full border-0"
-                    sandbox="allow-scripts"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full text-center text-gray-500 dark:text-gray-400 p-8">
-                    <div>
-                      <div className="text-4xl mb-4">👁️</div>
-                      <p className="font-semibold">No Preview Available</p>
-                      <p className="text-sm mt-2">Generate a project to see the live preview</p>
-                    </div>
                   </div>
                 )}
               </div>
@@ -768,19 +754,20 @@ ${analysis.correctedCode}
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
-            placeholder={currentMode === 'build' ? 'Describe your project idea (e.g., "Build a simple counter app")' : 'Describe the issue or click "Analyze Code"'}
-            className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+            placeholder={activeTab === 'build' ? 'Describe your project idea (e.g., "Build a simple counter app")' : activeTab === 'debug' ? 'Describe the issue or click "Analyze Code"' : 'Project preview mode'}
+            disabled={activeTab === 'preview'}
+            className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none disabled:opacity-50 disabled:cursor-not-allowed"
           />
           <button
             onClick={handleSubmit}
-            disabled={loading || (!userInput.trim() && currentMode === 'build')}
+            disabled={loading || (!userInput.trim() && activeTab === 'build') || activeTab === 'preview'}
             className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Analyzing...' : currentMode === 'build' ? 'Generate' : 'Analyze Code'}
+            {loading ? 'Analyzing...' : activeTab === 'build' ? 'Generate' : activeTab === 'debug' ? 'Analyze Code' : 'Preview Mode'}
           </button>
         </div>
         
-        {currentMode === 'stuck' && Object.keys(files).length === 0 && (
+        {activeTab === 'debug' && Object.keys(files).length === 0 && (
           <div className="max-w-4xl mx-auto mt-2">
             <button
               onClick={() => loadDemoProject('buggy_counter')}
