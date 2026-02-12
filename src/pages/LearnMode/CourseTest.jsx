@@ -68,42 +68,84 @@ const CourseTest = () => {
   const [score, setScore] = useState(0);
   const [totalQuestions, setTotalQuestions] = useState(0);
 
-  // Learning resources - static arrays
+  // Learning resources - real video and documentation links
   const learningResources = {
     python: {
       videos: [
-        'Introduction to Python - Basics',
-        'Python Data Structures',
-        'Functions and Modules in Python'
+        {
+          title: 'Python for Beginners - Full Course',
+          url: 'https://www.youtube.com/watch?v=rfscVS0vtbw'
+        },
+        {
+          title: 'Python Tutorial - Programming Tutorial',
+          url: 'https://www.youtube.com/watch?v=_uQrJ0TkZlc'
+        },
+        {
+          title: 'Learn Python - Full Course for Beginners',
+          url: 'https://www.youtube.com/watch?v=eWRfhZUzrAc'
+        }
       ],
-      notes: [
-        'Variables and Data Types',
-        'Control Flow (if, loops)',
-        'Functions and Scope'
+      docs: [
+        {
+          title: 'Official Python Tutorial',
+          url: 'https://docs.python.org/3/tutorial/'
+        },
+        {
+          title: 'Python Documentation',
+          url: 'https://docs.python.org/3/'
+        }
       ]
     },
     html: {
       videos: [
-        'HTML Fundamentals',
-        'HTML Forms and Input',
-        'Semantic HTML5'
+        {
+          title: 'HTML Full Course - Build a Website Tutorial',
+          url: 'https://www.youtube.com/watch?v=pQN-pnXPaVg'
+        },
+        {
+          title: 'HTML Tutorial for Beginners',
+          url: 'https://www.youtube.com/watch?v=qz0aGYrrlhU'
+        },
+        {
+          title: 'HTML Crash Course For Absolute Beginners',
+          url: 'https://www.youtube.com/watch?v=UB1O30fR-EE'
+        }
       ],
-      notes: [
-        'Basic HTML Tags',
-        'HTML Attributes',
-        'HTML5 Elements'
+      docs: [
+        {
+          title: 'MDN HTML Documentation',
+          url: 'https://developer.mozilla.org/en-US/docs/Web/HTML'
+        },
+        {
+          title: 'HTML Element Reference',
+          url: 'https://developer.mozilla.org/en-US/docs/Web/HTML/Element'
+        }
       ]
     },
     css: {
       videos: [
-        'CSS Basics',
-        'CSS Flexbox Tutorial',
-        'CSS Grid Layout'
+        {
+          title: 'CSS Crash Course For Absolute Beginners',
+          url: 'https://www.youtube.com/watch?v=yfoY53QXEnI'
+        },
+        {
+          title: 'CSS Tutorial - Zero to Hero',
+          url: 'https://www.youtube.com/watch?v=1Rs2ND1ryYc'
+        },
+        {
+          title: 'Learn CSS in 20 Minutes',
+          url: 'https://www.youtube.com/watch?v=1PnVor36_40'
+        }
       ],
-      notes: [
-        'Selectors and Properties',
-        'Box Model',
-        'Responsive Design'
+      docs: [
+        {
+          title: 'MDN CSS Documentation',
+          url: 'https://developer.mozilla.org/en-US/docs/Web/CSS'
+        },
+        {
+          title: 'CSS Reference Guide',
+          url: 'https://developer.mozilla.org/en-US/docs/Web/CSS/Reference'
+        }
       ]
     }
   };
@@ -183,42 +225,82 @@ const CourseTest = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-4xl font-bold mb-6 capitalize">{courseName} Learning Resources</h1>
+          <p className="text-gray-600 dark:text-gray-400 mb-8">
+            Take your time to study these resources before taking the final test.
+          </p>
           
+          {/* Video Tutorials Section */}
           <div className="card mb-6">
-            <h2 className="text-2xl font-bold mb-4">📹 Video Tutorials</h2>
-            <ul className="space-y-3">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-3xl">📹</span>
+              <h2 className="text-2xl font-bold">Video Tutorials</h2>
+            </div>
+            <div className="space-y-3">
               {learningResources[courseName]?.videos.map((video, index) => (
-                <li key={index} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <span className="text-2xl">▶️</span>
-                  <span>{video}</span>
-                </li>
+                <a
+                  key={index}
+                  href={video.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between gap-3 p-4 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 border border-red-200 dark:border-red-800 rounded-lg hover:shadow-md transition-all group"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl group-hover:scale-110 transition-transform">▶️</span>
+                    <span className="font-medium">{video.title}</span>
+                  </div>
+                  <span className="text-sm px-3 py-1 bg-red-600 text-white rounded-full group-hover:bg-red-700 transition-colors">
+                    Watch Video
+                  </span>
+                </a>
               ))}
-            </ul>
+            </div>
           </div>
 
+          {/* Documentation Section */}
           <div className="card mb-6">
-            <h2 className="text-2xl font-bold mb-4">📝 Study Notes</h2>
-            <ul className="space-y-3">
-              {learningResources[courseName]?.notes.map((note, index) => (
-                <li key={index} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <span className="text-2xl">📄</span>
-                  <span>{note}</span>
-                </li>
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-3xl">📚</span>
+              <h2 className="text-2xl font-bold">Official Documentation</h2>
+            </div>
+            <div className="space-y-3">
+              {learningResources[courseName]?.docs.map((doc, index) => (
+                <a
+                  key={index}
+                  href={doc.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between gap-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-lg hover:shadow-md transition-all group"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl group-hover:scale-110 transition-transform">📖</span>
+                    <span className="font-medium">{doc.title}</span>
+                  </div>
+                  <span className="text-sm px-3 py-1 bg-blue-600 text-white rounded-full group-hover:bg-blue-700 transition-colors">
+                    Read Docs
+                  </span>
+                </a>
               ))}
-            </ul>
+            </div>
           </div>
 
-          <button
-            onClick={() => {
-              setStage('final-test');
-              setScore(0);
-              setTotalQuestions(0);
-              setDifficulty('easy');
-            }}
-            className="btn-primary"
-          >
-            Start Final Test
-          </button>
+          {/* Call to Action */}
+          <div className="bg-gradient-to-r from-primary-600 to-purple-600 text-white rounded-lg p-6 mb-6">
+            <h3 className="text-xl font-bold mb-2">Ready to test your knowledge?</h3>
+            <p className="mb-4 opacity-90">
+              Make sure you've reviewed the materials above before starting the final test.
+            </p>
+            <button
+              onClick={() => {
+                setStage('final-test');
+                setScore(0);
+                setTotalQuestions(0);
+                setDifficulty('easy');
+              }}
+              className="bg-white text-primary-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+            >
+              Start Final Test →
+            </button>
+          </div>
         </div>
       </div>
     );
